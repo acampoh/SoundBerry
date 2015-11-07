@@ -29,23 +29,7 @@ void ProcessFCGI(int socket)
 		request.parse(cgiRequest);
 		if (request.isCorrect())
 		{
-			Response response;
-			switch (request.getEndPoint())
-			{
-				case EndPointType::Connect:
-					response = SoundCloud::sharedInstance()->connect();
-					break;
-				case EndPointType::Login:
-					response = SoundCloud::sharedInstance()->login(request.getData());
-					break;
-				case EndPointType::ConnectCallback:
-					response = SoundCloud::sharedInstance()->connectCallback(request.getData());
-					break;
-				default:
-					//Do Nothing
-					break;
-			}
-
+			Response response = SoundCloud::sharedInstance()->executeRequest(request);
 			response.doResponse(cgiRequest->out);
 		}
 	}

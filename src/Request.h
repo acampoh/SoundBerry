@@ -20,6 +20,7 @@ public:
 	virtual ~Request();
 
 	void parse(const FCGX_Request *cgiRequest);
+
 	bool isCorrect() const { return m_isOk; }
 	HttpParams getData() const { return m_params; }
 	EndPointType::Enum getEndPoint() const { return m_endPoint; }

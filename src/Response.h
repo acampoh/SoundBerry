@@ -8,6 +8,7 @@
 #ifndef SRC_RESPONSE_H_
 #define SRC_RESPONSE_H_
 
+#include <map>
 #include <string>
 
 struct FCGX_Stream;
@@ -21,8 +22,11 @@ public:
 
 	int getHttpCode() const { return m_httpCode; }
 	std::string getData() const { return m_data; }
+
+	void addHeader(const std::string& key, const std::string& value);
 	void doResponse(FCGX_Stream* stream);
 private:
+	std::map<std::string, std::string> m_headers;
 	int m_httpCode;
 	std::string m_data;
 };

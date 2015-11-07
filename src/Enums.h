@@ -39,6 +39,7 @@ namespace EndPointType
 		ConnectCallback,
 		Connect,
 		Login,
+		Play,
 
 		Count
 	};
@@ -50,7 +51,8 @@ namespace EndPoint
 	{
 		"connback",
 		"connect",
-		"connect/login"
+		"connect/login",
+		"play"
 	};
 
 	static std::map<std::string, EndPointType::Enum> EnumForString = CreateInvertedIndex<EndPointType::Enum>(StringForEnum, EndPointType::Count);
