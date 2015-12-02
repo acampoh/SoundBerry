@@ -1,8 +1,17 @@
 /*
- * CurlWrapper.cpp
+ * Copyright 2015 Adrián del Campo
  *
- *  Created on: 22/8/2015
- *      Author: acampoh
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "CurlWrapper.h"
@@ -89,6 +98,11 @@ CurlWrapper::CurlWrapper()
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 }
 
+CurlWrapper::~CurlWrapper()
+{
+	curl_global_cleanup();
+}
+
 void CurlWrapper::init()
 {
 	m_handler = curl_easy_init();
@@ -139,7 +153,6 @@ Response CurlWrapper::doRequest(MethodType::Enum method, const std::string& url,
 	curl_easy_setopt(m_handler, CURLOPT_WRITEFUNCTION, getResponse);
 	curl_easy_setopt(m_handler, CURLOPT_WRITEDATA, &response);
 	curl_easy_setopt(m_handler, CURLOPT_NOSIGNAL, 1);
-	//curl_easy_setopt(m_handler, CURLOPT_VERBOSE, 1L);
 
 	long responseCode = 400;
 	curl_easy_perform(m_handler);
@@ -155,8 +168,23 @@ Response CurlWrapper::doRequest(MethodType::Enum method, const std::string& url,
 	return Response(responseCode, response);
 }
 
-CurlWrapper::~CurlWrapper()
+std::string CurlWrapper::getRedirectUrl(const std::string& originalUrl, const std::map<std::string, std::string>& body)
 {
-	curl_global_cleanup();
-}
+	curl_easy_reset(m_handler);
+	std::string paramUrl = originalUrl;
 
+	paramUrl += getQueryStringFromParams(m_handler, body);
+	curl_easy_setopt(m_handler, CURLOPT_CONNECTTIMEOUT, 15);
+	curl_easy_setopt(m_handler, CURLOPT_TIMEOUT, 5);
+	curl_easy_setopt(m_handler, CURLOPT_URL, paramUrl.c_str());
+	curl_easy_setopt(m_handler, CURLOPT_FOLLOWLOCATION, 0);
+	curl_easy_setopt(m_handler, CURLOPT_NOSIGNAL, 1);
+
+	curl_easy_perform(m_handler);
+	char* finalUrl = nullptr;
+	curl_easy_getinfo (m_handler, CURLINFO_REDIRECT_URL, &finalUrl);
+
+	std::string redirectUrl(finalUrl);
+
+	return redirectUrl;
+}

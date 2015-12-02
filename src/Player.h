@@ -14,31 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef INVERTEDINDEX_H_
-#define INVERTEDINDEX_H_
+#ifndef SRC_PLAYER_H_
+#define SRC_PLAYER_H_
 
-#include<string>
+#include <string>
 
-template<class T>
-static std::map<std::string, T> CreateInvertedIndex(const std::string* index, int count)
+namespace FMOD
 {
-	std::map<std::string, T> m;
-	for (int i = 0; i < count; ++i)
-	{
-		m[index[i]] = (T) i;
-	}
-	return m;
+	class Channel;
+	class Sound;
+	class System;
 }
 
-template<class T>
-static std::map<int, T> CreateInvertedIndex(const int* index, int count)
+class Player
 {
-	std::map<int, T> m;
-	for (int i = 0; i < count; ++i)
-	{
-		m[index[i]] = (T) i;
-	}
-	return m;
-}
+public:
+	static Player* sharedInstance();
+	virtual ~Player();
 
-#endif /* INVERTEDINDEX_H_ */
+	void play(const std::string& sound_uri);
+	void update(float dt);
+
+private:
+	Player();
+
+	FMOD::System* m_system;
+	FMOD::Sound* m_currentSound;
+	FMOD::Channel* m_mainChannel;
+};
+
+#endif /* SRC_PLAYER_H_ */
