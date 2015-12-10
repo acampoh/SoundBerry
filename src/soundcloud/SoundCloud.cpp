@@ -16,6 +16,7 @@
 
 #include "SoundCloud.h"
 
+#include <ctime>
 #include <fstream>
 #include <set>
 
@@ -42,6 +43,7 @@ namespace sc
 	}
 
 	SoundCloud::SoundCloud()
+	: m_expireTime(-1)
 	{
 	}
 
@@ -76,12 +78,19 @@ namespace sc
 	Response SoundCloud::executeRequest(const Request &request)
 	{
 		Response response;
-		if (!checkCredentials() && request.getEndPoint() > EndPointType::Login)
+		if (request.getEndPoint() > EndPointType::Login)
 		{
-			response = Response(302, "");
-			response.addHeader("Location", k_credentialsUrl);
+			if (!checkCredentials())
+			{
+				response = Response(302, "");
+				response.addHeader("Location", k_credentialsUrl);
 
-			return response;
+				return response;
+			}
+			else if (time(0) > m_expireTime)
+			{
+				refreshToken();
+			}
 		}
 
 		switch (request.getEndPoint())
@@ -156,6 +165,9 @@ namespace sc
 
 			m_oauthToken = json["access_token"].asString();
 			m_refreshToken = json["refresh_token"].asString();
+			int expireTime = json["expires_in"].asInt();
+
+			m_expireTime = time(0) + expireTime;
 
 			saveCredentials();
 
@@ -188,16 +200,16 @@ namespace sc
 		Json::Value json;
 		Json::Reader(Json::Features::strictMode()).parse(response.getData(), json);
 
-		for (int i = 0; i < json.size(); ++i)
+		for (size_t i = 0; i < json.size(); ++i)
 		{
 			Track* t = new Track();
-			t->loadFromJson(json[i]);
+			t->loadFromJson(json[(int)i]);
 
 			m_queue.push_back(t);
 		}
 
 		char info[64];
-		snprintf(info, 64, "enqueued %i tracks, total %ui", json.size(), m_queue.size());
+		snprintf(info, 64, "enqueued %i tracks, total %lu", json.size(), m_queue.size());
 
 		return Response(200, info);
 	}
@@ -218,6 +230,7 @@ namespace sc
 
 		credentials["auth_token"] = m_oauthToken;
 		credentials["refresh_token"] = m_refreshToken;
+		credentials["expire_time"] = (int)m_expireTime;
 
 		std::ofstream stream(k_credentialsFile);
 		Json::StyledStreamWriter writer;
@@ -236,10 +249,33 @@ namespace sc
 
 		m_oauthToken = json["auth_token"].asString();
 		m_refreshToken = json["refresh_token"].asString();
+		m_expireTime = json["expire_time"].asInt();
 	}
 
 	bool SoundCloud::checkCredentials() const
 	{
 		return !m_oauthToken.empty() && !m_refreshToken.empty();
+	}
+
+	void SoundCloud::refreshToken()
+	{
+		HttpParams params;
+		params["client_id"] = m_clientId;
+		params["client_secret"] = m_clientSecret;
+		params["refresh_token"] = m_refreshToken;
+		params["grant_type"] = "refresh_token";
+
+		Response response = m_wrapper.doRequest(MethodType::Post, k_apiUrl + "/oauth2/token", params);
+
+		Json::Value json;
+		Json::Reader(Json::Features::strictMode()).parse(response.getData(), json);
+
+		m_oauthToken = json["access_token"].asString();
+		m_refreshToken = json["refresh_token"].asString();
+		int expireTime = json["expires_in"].asInt();
+
+		m_expireTime = time(0) + expireTime;
+
+		saveCredentials();
 	}
 }

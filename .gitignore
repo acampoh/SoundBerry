@@ -29,3 +29,9 @@
 
 # config files
 *.conf
+soundCloudCredentials.json
+
+
+Debug/
+Raspberry\ Debug/
+Raspberry\ Release/

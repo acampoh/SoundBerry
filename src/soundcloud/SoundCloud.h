@@ -52,6 +52,7 @@ namespace sc
 		void saveCredentials();
 		void loadCredentials();
 		bool checkCredentials() const;
+		void refreshToken();
 
 		CurlWrapper m_wrapper;
 
@@ -62,6 +63,8 @@ namespace sc
 		std::string m_passwd;
 		std::string m_oauthToken;
 		std::string m_refreshToken;
+
+		time_t m_expireTime;
 
 		std::vector<Track*> m_queue;
 	};
